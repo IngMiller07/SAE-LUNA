@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}{{ est.nombre }}{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrapper">
+
+  <!-- Back -->
+  <div style="margin-bottom:16px;">
+    <a href="{{ url_for('students') }}" class="btn btn-ghost btn-sm">← Volver</a>
+  </div>
+
+  <!-- Student Hero -->
+  <div class="student-hero">
+    <div class="student-avatar-large">{{ est.nombre[0] }}</div>
+    <div class="student-info">
+      <h1>{{ est.nombre }}</h1>
+      <p>{{ est.carrera }} · Semestre {{ est.semestre }}°</p>
+      <p style="margin-top:4px;">📧 {{ est.email }}</p>
+    </div>
+    <div class="student-stats">
+      <div class="stat-box">
+        <div class="stat-val {{ 'text-danger' if est.promedio < 6 else ('text-warning' if est.promedio < 7.5 else 'text-success') }}">
+          {{ '%.1f'|format(est.promedio) }}
+        </div>
+        <div class="stat-label">Promedio</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val {{ 'text-danger' if est.asistencia < 70 else ('text-warning' if est.asistencia < 80 else 'text-success') }}">
+          {{ '%.0f'|format(est.asistencia) }}%
+        </div>
+        <div class="stat-label">Asistencia</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">
+          <span class="badge badge-{{ est.nivel_riesgo | lower }}">
+            {{ est.nivel_riesgo }}
+          </span>
+        </div>
+        <div class="stat-label" style="margin-top:8px;">Riesgo</div>
+      </div>
+      <div style="display:flex; align-items:center; margin-left:8px;">
+        <a href="{{ url_for('chatbot', student_id=est.id) }}" class="btn btn-primary">
+          🤖 Chatbot
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Calificaciones por Materia -->
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Promedios por Materia</div>
+      {% if chart_materias %}
+      <div class="chart-container" style="height:220px;">
+        <canvas id="chartMaterias"></canvas>
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding:30px;">
+        <span class="icon" style="font-size:2rem;">📚</span>
+        <p>Sin calificaciones registradas.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Historial de Alertas -->
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--danger);box-shadow:0 0 8px var(--danger);"></span>Alertas del Estudiante</div>
+      {% if alertas %}
+      <div style="display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto;">
+        {% for alerta in alertas %}
+        <div style="padding:10px 12px; background:rgba(255,255,255,0.03); border-radius:8px; border-left: 3px solid {{ 'var(--danger)' if alerta.prioridad=='Alta' else ('var(--warning)' if alerta.prioridad=='Media' else 'var(--success)') }};">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+            <span class="fw-600 text-sm">{{ alerta.tipo | replace('_', ' ') | title }}</span>
+            <span class="badge badge-{{ alerta.estado | lower }}">{{ alerta.estado }}</span>
+          </div>
+          <p class="text-muted text-sm" style="margin-top:3px;">{{ alerta.descripcion }}</p>
+          <p class="text-muted" style="font-size:0.72rem; margin-top:4px;">{{ alerta.fecha.strftime('%d/%m/%Y %H:%M') }}</p>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding:30px;">
+        <span class="icon" style="font-size:2rem;">✅</span>
+        <p>Sin alertas registradas.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Tabla de Calificaciones -->
+  {% if cal_por_materia %}
+  <div class="card" style="margin-top:20px;">
+    <div class="card-title"><span class="dot" style="background:var(--accent-purple);box-shadow:0 0 8px var(--accent-purple);"></span>Tabla de Calificaciones por Período</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Materia</th>
+            {% for p in periodos %}
+            <th>{{ p }}</th>
+            {% endfor %}
+            <th>Promedio</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for materia, notas in cal_por_materia.items() %}
+          {% set vals = notas.values() | list %}
+          {% set prom = (vals | sum) / (vals | length) %}
+          <tr>
+            <td class="fw-600">{{ materia }}</td>
+            {% for p in periodos %}
+            <td>
+              {% if notas.get(p) is not none %}
+              <span class="{{ 'text-danger' if notas[p] < 6 else ('text-warning' if notas[p] < 7.5 else 'text-success') }} fw-600">
+                {{ '%.1f'|format(notas[p]) }}
+              </span>
+              {% else %}
+              <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+            {% endfor %}
+            <td>
+              <span class="fw-600 {{ 'text-danger' if prom < 6 else ('text-warning' if prom < 7.5 else 'text-success') }}">
+                {{ '%.1f'|format(prom) }}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if chart_materias %}
+<script>
+const materias = {{ chart_materias | tojson }};
+const notas    = {{ chart_notas   | tojson }};
+const colors   = notas.map(v => v < 6 ? 'rgba(244,63,94,0.7)' : v < 7.5 ? 'rgba(245,158,11,0.7)' : 'rgba(16,185,129,0.7)');
+
+new Chart(document.getElementById('chartMaterias'), {
+  type: 'bar',
+  data: {
+    labels: materias,
+    datasets: [{
+      label: 'Promedio',
+      data: notas,
+      backgroundColor: colors,
+      borderColor: colors.map(c => c.replace('0.7','1')),
+      borderWidth: 1,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: '#8892aa', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+      y: { min: 0, max: 10, ticks: { color: '#8892aa' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+    }
+  }
+});
+</script>
+{% endif %}
+{% endblock %}

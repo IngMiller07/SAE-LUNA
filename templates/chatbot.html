@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}Chatbot RAG{% endblock %}
+
+{% block content %}
+<div class="page-wrapper" style="padding-bottom:0;">
+  <div class="page-header">
+    <h1 class="page-title">🤖 Chatbot de Soporte Académico</h1>
+    <p class="page-subtitle">Asistente RAG — genera planes de estudio personalizados</p>
+  </div>
+
+  <div class="chat-layout">
+    <!-- Sidebar -->
+    <div class="chat-sidebar">
+      <!-- Student selector -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px;"><span class="dot"></span>Contexto del Estudiante</div>
+        <p class="text-muted" style="font-size:0.8rem; margin-bottom:8px;">Selecciona un estudiante para personalizar las respuestas.</p>
+        <select class="form-select" id="selectEstudiante" style="width:100%; min-width:unset;">
+          <option value="">— Sin contexto —</option>
+          {% for e in estudiantes %}
+          <option value="{{ e.id }}" {% if est and est.id == e.id %}selected{% endif %}>
+            {{ e.nombre }}
+          </option>
+          {% endfor %}
+        </select>
+
+        {% if est %}
+        <!-- Selected student info -->
+        <div style="margin-top:14px; padding:12px; background:rgba(255,255,255,0.04); border-radius:var(--radius-sm); border: 1px solid var(--border-glass);">
+          <div class="fw-600" style="margin-bottom:4px;">{{ est.nombre }}</div>
+          <div class="text-muted text-sm">{{ est.carrera }}</div>
+          <div class="text-muted text-sm">Semestre {{ est.semestre }}° · Prom. {{ '%.1f'|format(est.promedio) }}</div>
+          <div style="margin-top:8px;">
+            <span class="badge badge-{{ est.nivel_riesgo | lower }}">{{ est.nivel_riesgo }}</span>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Suggested questions -->
+      <div class="card">
+        <div class="card-title" style="margin-bottom:12px;"><span class="dot" style="background:var(--accent-purple);box-shadow:0 0 8px var(--accent-purple);"></span>Sugerencias</div>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          {% set preguntas = [
+            '¿Cuál es mi materia más débil?',
+            'Dame un plan de estudio personalizado',
+            '¿Cómo mejorar mi asistencia?',
+            'Técnicas para estudiar Cálculo',
+            '¿Qué recursos me recomiendas?',
+            'Tengo examen mañana, ¿qué hago?'
+          ] %}
+          {% for p in preguntas %}
+          <button class="btn btn-ghost btn-sm sugerencia-btn" style="text-align:left; justify-content:flex-start;" data-msg="{{ p }}">
+            💬 {{ p }}
+          </button>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat main -->
+    <div class="chat-main">
+      <!-- Header -->
+      <div class="chat-header">
+        <div class="avatar">🤖</div>
+        <div>
+          <div class="fw-600">Asistente SAE</div>
+          <div class="text-muted text-sm">
+            {% if est %}Contexto: {{ est.nombre }}{% else %}Sin contexto específico{% endif %}
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btnLimpiar" style="margin-left:auto;">🗑 Limpiar</button>
+      </div>
+
+      <!-- Messages -->
+      <div class="chat-messages" id="chatMessages">
+        <div class="message bot">
+          <div class="msg-avatar">🤖</div>
+          <div class="msg-bubble">
+            ¡Hola! 👋 Soy el asistente académico del Sistema de Alertas Tempranas.
+            {% if est %}
+            Estoy aquí para ayudar a <strong>{{ est.nombre }}</strong> con su rendimiento académico.
+            {% else %}
+            Selecciona un estudiante del panel lateral para recibir respuestas personalizadas, o pregúntame algo general sobre técnicas de estudio.
+            {% endif %}
+            ¿En qué te puedo ayudar?
+          </div>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div class="chat-input-area">
+        <input type="text" id="chatInput" class="form-control"
+               placeholder="Escribe tu mensaje…" autocomplete="off" />
+        <button class="btn btn-primary" id="btnEnviar" id="sendBtn">
+          ➤ Enviar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentStudentId = "{{ est.id if est else '' }}";
+const messagesEl     = document.getElementById('chatMessages');
+const inputEl        = document.getElementById('chatInput');
+const selectEl       = document.getElementById('selectEstudiante');
+
+function scrollBottom() {
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function addMessage(text, role = 'bot') {
+  const div = document.createElement('div');
+  div.className = `message ${role}`;
+  const avatar = document.createElement('div');
+  avatar.className = 'msg-avatar';
+  avatar.textContent = role === 'bot' ? '🤖' : '👤';
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.textContent = text;
+  div.appendChild(avatar);
+  div.appendChild(bubble);
+  messagesEl.appendChild(div);
+  scrollBottom();
+}
+
+function addTyping() {
+  const div = document.createElement('div');
+  div.className = 'message bot';
+  div.id = 'typing';
+  div.innerHTML = `
+    <div class="msg-avatar">🤖</div>
+    <div class="msg-bubble" style="padding:12px 14px;">
+      <div class="typing-dots"><span></span><span></span><span></span></div>
+    </div>`;
+  messagesEl.appendChild(div);
+  scrollBottom();
+  return div;
+}
+
+async function sendMessage(text) {
+  if (!text.trim()) return;
+  addMessage(text, 'user');
+  inputEl.value = '';
+
+  const typingEl = addTyping();
+  document.getElementById('btnEnviar').disabled = true;
+
+  try {
+    const res = await fetch('/chatbot/message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, student_id: currentStudentId || null })
+    });
+    const data = await res.json();
+    typingEl.remove();
+    addMessage(data.response, 'bot');
+  } catch (e) {
+    typingEl.remove();
+    addMessage('⚠️ Error de conexión. Por favor intenta de nuevo.', 'bot');
+  } finally {
+    document.getElementById('btnEnviar').disabled = false;
+    inputEl.focus();
+  }
+}
+
+document.getElementById('btnEnviar').addEventListener('click', () => sendMessage(inputEl.value));
+inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(inputEl.value); });
+
+// Suggested question buttons
+document.querySelectorAll('.sugerencia-btn').forEach(btn => {
+  btn.addEventListener('click', () => sendMessage(btn.dataset.msg));
+});
+
+// Student selector change — reload page with new student
+selectEl.addEventListener('change', function() {
+  const sid = this.value;
+  const url = sid ? `/chatbot?student_id=${sid}` : '/chatbot';
+  window.location.href = url;
+});
+
+// Clear chat
+document.getElementById('btnLimpiar').addEventListener('click', () => {
+  // Keep only the welcome message
+  const msgs = messagesEl.querySelectorAll('.message');
+  msgs.forEach((m, i) => { if (i > 0) m.remove(); });
+});
+
+scrollBottom();
+</script>
+{% endblock %}
