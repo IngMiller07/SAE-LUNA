@@ -184,6 +184,23 @@ def generate_alerts():
                 descripcion=desc,
             )
             db.session.add(nueva)
+            db.session.flush() # Para obtener el ID si fuera necesario
+            
+            # Enviar notificación Telegram si está vinculado
+            if est.telegram_chat_id:
+                try:
+                    import telebot
+                    import os
+                    from dotenv import load_dotenv
+                    load_dotenv()
+                    telegram_token = os.getenv('TELEGRAM_TOKEN')
+                    if telegram_token and telegram_token != 'tu_token_aqui':
+                        bot = telebot.TeleBot(telegram_token)
+                        msg = f"⚠️ *ALERTA ACADÉMICA*\n¡Hola {est.nombre}!\n\nTienes una nueva alerta por _{tipo.replace('_', ' ')}_.\n*Nivel de Prioridad:* {nueva.prioridad}\n\nPor favor, ingresa al portal o comunícate con tu docente."
+                        bot.send_message(est.telegram_chat_id, msg, parse_mode="Markdown")
+                except Exception as e:
+                    print(f"Error mandando Telegram a {est.nombre}: {e}")
+                    
             nuevas += 1
     db.session.commit()
     return jsonify({'success': True, 'nuevas_alertas': nuevas})

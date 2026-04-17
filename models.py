@@ -14,6 +14,7 @@ class Estudiante(db.Model):
     asistencia = db.Column(db.Float, default=0.0)  # porcentaje 0-100
     nivel_riesgo = db.Column(db.String(10), default='Bajo')  # Alto, Medio, Bajo
     fecha_registro = db.Column(db.DateTime, default=datetime.utcnow)
+    telegram_chat_id = db.Column(db.String(50), nullable=True)
 
     calificaciones = db.relationship('Calificacion', backref='estudiante', lazy=True, cascade='all, delete-orphan')
     alertas = db.relationship('Alerta', backref='estudiante', lazy=True, cascade='all, delete-orphan')
