@@ -540,8 +540,22 @@ class AppWindow(ctk.CTk):
         try:
             a = s.query(Alerta).get(aid)
             if a:
-                a.estado = estado
+                # 1. Ejecutar Notificación a Telegram si es Escalada
+                if estado == "Escalada":
+                    from telegram_bot import get_telegram_service
+                    tg = get_telegram_service()
+                    if a.estudiante and a.estudiante.telegram_chat_id:
+                        msg = (f"⚠️ *MENSAJE OFICIAL COORDINACIÓN (SAE)* ⚠️\n\n"
+                               f"Estimado(a) {a.estudiante.nombre}. Se te ha emitido una alerta urgente:\n\n"
+                               f"📝 *Motivo:* {a.descripcion}\n"
+                               f"📍 *Acción:* Por favor, reportarse con su tutor lo antes posible.\n\n"
+                               f"_Responde a Luna si necesitas ayuda._")
+                        tg.send_alert(a.estudiante.telegram_chat_id, msg)
+                    
+                # 2. Quitar la alerta de la base de datos para limpiar la lista ("quitarla por si la quiero volver a escalar")
+                s.delete(a)
                 s.commit()
+                
             self._refresh_alertas()
         finally:
             s.close()
