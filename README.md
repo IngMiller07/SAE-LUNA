@@ -111,27 +111,33 @@ El sistema cuenta con una barra de navegación lateral constante. A continuació
 
 ---
 
-## 🌐 Guía de Despliegue en Equipo (Para Github / Colaboradores)
+## 🌐 Guía de Despliegue (Clonación para Docentes y Evaluadores)
 
-Si vas a subir este proyecto a un repositorio de **GitHub** para que tus compañeros de universidad lo prueben, **es crucial que sigan al pie de la letra estas instrucciones** para que el proyecto les corra sin errores de directorios o de APIs caídas:
+Este proyecto está diseñado para funcionar de manera **autónoma y portable**. Al descargar o clonar este repositorio desde GitHub, el proyecto se descargará con la **Base de Datos SQL (estudiantes y alertas)** instruida y la **Base Vectorial (RAG con PDFs)** completamente incrustadas. Usted no necesita gestionar migraciones ni poblar datos manualmente.
 
-### Lo que NO debes subir a GitHub (`.gitignore` automático)
-Asegúrate de que tu archivo `.gitignore` contenga estas líneas antes de hacer el *commit* para evitar exponer secretos o llenar su RAM de basura:
-```text
-.env
-sistema_alertas.db
-chroma_db/
-__pycache__/
-*.pt
+Para ejecutar este sistema en su propia máquina de evaluación, por favor siga minuciosamente estos tres pasos:
+
+### 1. Variables de Entorno (Tokens de Seguridad)
+Por motivos de ciberseguridad, los *API Keys* y permisos no están públicos. En la ruta raíz encontrará un archivo llamado `.env.example`:
+- Renombre ese archivo a simplemente `.env` (borrando la extensión `.example`).
+- Ábralo con cualquier editor de texto y pegue las dos claves de acceso (Token de Telegram y API Key de Roboflow) proporcionadas por el equipo de desarrollo.
+
+### 2. Motor de Inteligencia Artificial (Ollama)
+"Luna" (nuestro asistente) corre localmente en su CPU/GPU para proteger la privacidad de los datos de la Universidad enviando cero datos a servidores de terceros (como OpenAI). Necesita instalar el motor de razonamiento antes de arrancar.
+- Descargue Ollama desde [ollama.com](https://ollama.com/) e instálelo en su PC.
+- Abra su terminal o Símbolo del Sistema y ejecute los siguientes comandos para descargar el cerebro base de lenguaje y el convertidor vectorial:
+  ```bash
+  ollama run llama3.2
+  ollama pull nomic-embed-text
+  ```
+
+### 3. Arranque del Sistema
+Instale las librerías dependientes (como interfaz gráfica UI, algoritmos matemáticos y procesamiento de imágenes) e inicie el archivo central del proyecto:
+```bash
+pip install -r requirements.txt
+python main.py
 ```
 
-### Cómo debe arrancar tu compañero (El Receptor)
-Cuando tu colega haga `git clone` a tu repositorio, el proyecto le bajará automáticamente con la base de datos SQL instanciada y la base vectorial de los PDFs RAG precargados. Él solo debe hacer lo siguiente:
+🎉 **¡El proyecto SAE levantará idéntico y listó para la evaluación!**
 
-1. **Crear su propio archivo `.env`:** Simplemente tiene que cambiarle el nombre al archivo `.env.example` que viene en la carpeta a `.env` (borrando el .example). Allí, deberá pegar tu Token de Bot y tu API Key de Roboflow. (¡Nunca subas tu archivo verdadero a GitHub públicamente!).
-2. **Descargar Llama 3.2 localmente:** Dile que abra su terminal e instale en su escritorio `ollama run llama3.2` y `ollama pull nomic-embed-text` (Si no tienen los cerebros base de Llama, el bot de chat no hablará).
-3. **Instalar paquetes y Arrancar la app:** Finalmente que instalen con `pip install -r requirements.txt` y corran `python main.py`. ¡El proyecto SAE levantará idéntico al tuyo de inmediato!
-
-*Si siguen esto paso a paso, el clon del SAE en sus computadoras se comportará idénticamente al de tu máquina principal.*
-
-> *Proyecto Universitario implementado bajo especificaciones completas de sistemas distribuidos, concurrencia de hilos para interfaces fluidas, y librerías IA de vanguardia local y en nube.*
+> *Proyecto Académico Universitario: Arquitectura orientada a la concurrencia asíncrona, robustez en el diseño de interfaces modernas, e integración de vanguardia con modelos de Inteligencia Artificial locales y distribuidos en nube.*
