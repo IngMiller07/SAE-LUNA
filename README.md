@@ -140,4 +140,27 @@ python main.py
 
 🎉 **¡El proyecto SAE levantará idéntico y listó para la evaluación!**
 
+---
+
+## ⚙️ Arquitectura y Funcionamiento Interno (Technical Breakdown)
+
+El ecosistema de SAE está desacoplado siguiendo principios de responsabilidad única. No es un script lineal, es un orquestador altamente concurrente. Entender cómo se comunican las piezas es la clave de su rendimiento:
+
+### 1. El Hilo Maestro (`main.py`)
+No existen pantallas encadenadas tradicionalmente. Cuando arrancas `main.py`, se invoca la clase maestra de la GUI (`App`) bajo el paradigma de orientacion a objetos, manejada estrictamente por `CustomTkinter`. Antes de mostrar la ventana de Windows, `main.py` paraleliza procesos:
+- Levanta la conexión permanente a la Base de Datos.
+- Lanza sub-hilos en segundo plano (`threading.Thread`) para arrancar la API del lado de Telegram de forma silenciosa para que no bloquee ni congele la interfaz.
+
+### 2. Directorio de Inteligencia (`ai_core/`)
+La inteligencia se abstrae en su propio paquete:
+- **`rag_chatbot.py` (Lógica NLP):** Utiliza un patrón *Singleton*. Cuando invocas al bot de chat (sea desde tu ventana o tu celular en Telegram), el código carga el modelo de Llama en la VRAM de tu PC solo una vez en la historia. Ante una pregunta, extrae al estudiante desde SQL y extrae 2 fragmentos del Reglamento desde ChromaDB. Ensambla y destruye un prompt masivo y devuelve el veredicto por *tokens*.
+- **`vision_yolo.py` (Visión Computacional):** Este script no entrena la IA; se aprovecha del ecosistema *Roboflow Universe*. Captura el stream de video de OpenCV a 30fps. Mediante un `confidence=0.25`, extrae cuadros (frames) en tiempo real, los envía por canal rápido o infiere mediante un modelo pre-entrenado `.pt` para deducir desatenciones. Esto se hace en un sub-proceso puro para jamás detener los clicks de los botones gráficamente.
+
+### 3. Modelo de Tablas y Almacenamiento (`models.py` / `database.py`)
+Utilizamos **SQLAlchemy** como puente entre Python y SQLite (`sistema_alertas.db`). 
+La interacción NO se hace vía SQL cruzado (`SELECT * FROM ESTUDIANTE`). Cada fila de estudiante es un objeto Python vivo con métodos integrados como `estudiante.materia_mas_debil()`, aislando completamente la capa de persistencia de la capa visual.
+
+### 4. Automatización Documental (`reports/pdf_generator.py`)
+Se abandonaron las librerías viejas que arman cuadros de colores imposibles. Se emplea el canvas dinámico de **ReportLab**. Al solicitar exportar la cohorte, el sistema usa una matriz de guardado de *Windows Native* (`filedialog.asksaveasfilename`) y pinta mediante iteraciones las líneas de texto puro hasta cerrar el PDF y forzar tu lector a abrirlo. Todo en 0.4 milisegundos.
+
 > *Proyecto Académico Universitario: Arquitectura orientada a la concurrencia asíncrona, robustez en el diseño de interfaces modernas, e integración de vanguardia con modelos de Inteligencia Artificial locales y distribuidos en nube.*
