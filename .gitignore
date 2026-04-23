@@ -1,25 +1,34 @@
-# Python
+# Python environment
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 
-# Environments
+# Entornos virtuales
 .env
 .venv
 env/
 venv/
-ENV/
-env.bak/
-venv.bak/
 
-# SQLite Database
-# (Comentado para que el archivo sistema_alertas.db SÍ se suba a GitHub)
-# *.sqlite3
-# *.db
-# sistema_alertas.db
+# Bases de datos locles
+*.sqlite3
+*.db
+sistema_alertas.db
 
-# Flask
+# Bases de datos vectoriales RAG
+chroma_db/
+
+# Pesos de Inteligencia Artificial (YOLO)
+*.pt
+runs/
+dataset_distracted/
+
+# PDFs simulados opcionales que pesan 
+# documentos_rag/ 
+# Si quieres que tus compañeros lean los PDFs, mantenlos. 
+# Si no, descomenta la linea de arriba.
+
+# Flask / Web
 instance/
 .webassets-cache
 

@@ -1,23 +1,24 @@
-from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text, ForeignKey
+from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime
 
-db = SQLAlchemy()
+Base = declarative_base()
 
-class Estudiante(db.Model):
+class Estudiante(Base):
     __tablename__ = 'estudiantes'
-    id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(100), nullable=False)
-    carrera = db.Column(db.String(100), nullable=False)
-    semestre = db.Column(db.Integer, nullable=False)
-    email = db.Column(db.String(120), nullable=False)
-    promedio = db.Column(db.Float, default=0.0)
-    asistencia = db.Column(db.Float, default=0.0)  # porcentaje 0-100
-    nivel_riesgo = db.Column(db.String(10), default='Bajo')  # Alto, Medio, Bajo
-    fecha_registro = db.Column(db.DateTime, default=datetime.utcnow)
-    telegram_chat_id = db.Column(db.String(50), nullable=True)
+    id = Column(Integer, primary_key=True)
+    nombre = Column(String(100), nullable=False)
+    carrera = Column(String(100), nullable=False)
+    semestre = Column(Integer, nullable=False)
+    email = Column(String(120), nullable=False)
+    promedio = Column(Float, default=0.0)
+    asistencia = Column(Float, default=0.0)  # porcentaje 0-100
+    nivel_riesgo = Column(String(10), default='Bajo')  # Alto, Medio, Bajo
+    fecha_registro = Column(DateTime, default=datetime.utcnow)
+    telegram_chat_id = Column(String(50), nullable=True)
 
-    calificaciones = db.relationship('Calificacion', backref='estudiante', lazy=True, cascade='all, delete-orphan')
-    alertas = db.relationship('Alerta', backref='estudiante', lazy=True, cascade='all, delete-orphan')
+    calificaciones = relationship('Calificacion', backref='estudiante', lazy=True, cascade='all, delete-orphan')
+    alertas = relationship('Alerta', backref='estudiante', lazy=True, cascade='all, delete-orphan')
 
     def calcular_riesgo(self):
         if self.promedio < 6.0 or self.asistencia < 70:
@@ -46,13 +47,13 @@ class Estudiante(db.Model):
         }
 
 
-class Calificacion(db.Model):
+class Calificacion(Base):
     __tablename__ = 'calificaciones'
-    id = db.Column(db.Integer, primary_key=True)
-    estudiante_id = db.Column(db.Integer, db.ForeignKey('estudiantes.id'), nullable=False)
-    materia = db.Column(db.String(100), nullable=False)
-    periodo = db.Column(db.String(20), nullable=False)  # ej. "2024-1", "2024-2"
-    nota = db.Column(db.Float, nullable=False)
+    id = Column(Integer, primary_key=True)
+    estudiante_id = Column(Integer, ForeignKey('estudiantes.id'), nullable=False)
+    materia = Column(String(100), nullable=False)
+    periodo = Column(String(20), nullable=False)  # ej. "2024-1", "2024-2"
+    nota = Column(Float, nullable=False)
 
     def to_dict(self):
         return {
@@ -63,17 +64,17 @@ class Calificacion(db.Model):
         }
 
 
-class Alerta(db.Model):
+class Alerta(Base):
     __tablename__ = 'alertas'
-    id = db.Column(db.Integer, primary_key=True)
-    estudiante_id = db.Column(db.Integer, db.ForeignKey('estudiantes.id'), nullable=False)
-    tipo = db.Column(db.String(50), nullable=False)  # bajo_rendimiento, inasistencias, tendencia_negativa
-    prioridad = db.Column(db.String(10), nullable=False)  # Alta, Media, Baja
-    descripcion = db.Column(db.Text, nullable=False)
-    estado = db.Column(db.String(20), default='Activa')  # Activa, Atendida, Escalada
-    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    id = Column(Integer, primary_key=True)
+    estudiante_id = Column(Integer, ForeignKey('estudiantes.id'), nullable=False)
+    tipo = Column(String(50), nullable=False)  # bajo_rendimiento, inasistencias, tendencia_negativa
+    prioridad = Column(String(10), nullable=False)  # Alta, Media, Baja
+    descripcion = Column(Text, nullable=False)
+    estado = Column(String(20), default='Activa')  # Activa, Atendida, Escalada
+    fecha = Column(DateTime, default=datetime.utcnow)
 
-    seguimientos = db.relationship('Seguimiento', backref='alerta', lazy=True, cascade='all, delete-orphan')
+    seguimientos = relationship('Seguimiento', backref='alerta', lazy=True, cascade='all, delete-orphan')
 
     def to_dict(self):
         return {
@@ -88,18 +89,18 @@ class Alerta(db.Model):
         }
 
 
-class Seguimiento(db.Model):
+class Seguimiento(Base):
     __tablename__ = 'seguimientos'
-    id = db.Column(db.Integer, primary_key=True)
-    alerta_id = db.Column(db.Integer, db.ForeignKey('alertas.id'), nullable=False)
-    docente = db.Column(db.String(100), nullable=False)
-    accion = db.Column(db.Text, nullable=False)
-    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    id = Column(Integer, primary_key=True)
+    alerta_id = Column(Integer, ForeignKey('alertas.id'), nullable=False)
+    docente = Column(String(100), nullable=False)
+    accion = Column(Text, nullable=False)
+    fecha = Column(DateTime, default=datetime.utcnow)
 
 
-class BaseConocimiento(db.Model):
+class BaseConocimiento(Base):
     __tablename__ = 'base_conocimiento'
-    id = db.Column(db.Integer, primary_key=True)
-    tema = db.Column(db.String(150), nullable=False)
-    contenido = db.Column(db.Text, nullable=False)
-    tags = db.Column(db.String(300), nullable=False)  # CSV de palabras clave
+    id = Column(Integer, primary_key=True)
+    tema = Column(String(150), nullable=False)
+    contenido = Column(Text, nullable=False)
+    tags = Column(String(300), nullable=False)  # CSV de palabras clave
