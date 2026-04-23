@@ -12,11 +12,10 @@ venv/
 
 # Bases de datos locles
 *.sqlite3
-*.db
-sistema_alertas.db
+# sistema_alertas.db (Permitido para que los compañeros tengan data dummy)
 
 # Bases de datos vectoriales RAG
-chroma_db/
+# chroma_db/ (Permitido para que los compañeros eviten indexado RAG)
 
 # Pesos de Inteligencia Artificial (YOLO)
 *.pt

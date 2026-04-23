@@ -66,13 +66,8 @@ TELEGRAM_TOKEN=1234567:XX-XXXXXXXXXXXXXXXXXXX
 ROBOFLOW_API_KEY=tu_token_aqui_roboflow
 ```
 
-### Paso 4: Generación Falsa de Datos (Seed Database)
-Como es un prototipo, el sistema trae scripts automatizados para crear la Universidad desde el principio. Ejecuta en este estricto orden matemático:
-```bash
-python create_knowledge_base.py  # Construirá la base de datos RAG en Chroma con los PDFs simulados.
-python create_mock_pdf.py        # Validará fragmentos.
-python seed_db.py                # Poblará la Base de Datos SQLite (estudiantes y alertas).
-```
+### Paso 4: Base de Datos Embebida (Out of the Box)
+A diferencia de proyectos abstractos, este SAE ya cuenta con toda la data académica lista para ti. Los datos (`sistema_alertas.db`) y la memoria semántica de las reglas universitarias (`chroma_db/`) se descargan automáticamente dentro de este repositorio sin configuraciones extra. No necesitas instalar ningún motor SQL externo, SQLite lo maneja por defecto.
 
 ### Paso 5: ¡Correr la Aplicación Final!
 Todo está amarrado a un solo hilo maestro con limpieza en segundo plano. Nunca ejecutes varios scripts a la vez, únicamente corre este:
@@ -131,16 +126,11 @@ __pycache__/
 ```
 
 ### Cómo debe arrancar tu compañero (El Receptor)
-Cuando tu colega haga `git clone` a tu repositorio, el proyecto le bajará *vacío* de bases de datos y sin tokens. Él debe:
+Cuando tu colega haga `git clone` a tu repositorio, el proyecto le bajará automáticamente con la base de datos SQL instanciada y la base vectorial de los PDFs RAG precargados. Él solo debe hacer lo siguiente:
 
-1. **Crear su propio archivo `.env`** en su carpeta descargada y pegarle tu Token de Bot y tu API Key de Roboflow (Pásaselas por WhatsApp o un canal seguro, ¡nunca las subas a GitHub publicamente!).
-2. **Descargar Llama 3.2 y Nomic localmente:** Dile que abra su terminal e instale Ollama `ollama run llama3.2` y `ollama pull nomic-embed-text` (Si ellos no tienen los pesos de la IA, el programa crasheará).
-3. **Poblar la base de datos vacía:** Tu compañero deberá ejecutar en su terminal los comandos constructores que usamos al principio:
-   ```bash
-   python create_knowledge_base.py
-   python seed_db.py
-   ```
-4. **Abrir la app:** Finalmente que ejecuten `python main.py`.
+1. **Crear su propio archivo `.env`:** Simplemente tiene que cambiarle el nombre al archivo `.env.example` que viene en la carpeta a `.env` (borrando el .example). Allí, deberá pegar tu Token de Bot y tu API Key de Roboflow. (¡Nunca subas tu archivo verdadero a GitHub públicamente!).
+2. **Descargar Llama 3.2 localmente:** Dile que abra su terminal e instale en su escritorio `ollama run llama3.2` y `ollama pull nomic-embed-text` (Si no tienen los cerebros base de Llama, el bot de chat no hablará).
+3. **Instalar paquetes y Arrancar la app:** Finalmente que instalen con `pip install -r requirements.txt` y corran `python main.py`. ¡El proyecto SAE levantará idéntico al tuyo de inmediato!
 
 *Si siguen esto paso a paso, el clon del SAE en sus computadoras se comportará idénticamente al de tu máquina principal.*
 
