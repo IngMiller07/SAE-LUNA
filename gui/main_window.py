@@ -514,11 +514,12 @@ class AppWindow(ctk.CTk):
                              font=ctk.CTkFont("Segoe UI", 13)
                              ).pack(anchor="w", padx=16, pady=(6, 10))
 
-                # Acciones (solo si activa)
+                # Acciones reactivas basadas en la máquina de estados
+                act_frm = ctk.CTkFrame(card, fg_color="transparent")
+                act_frm.pack(fill="x", padx=16, pady=(0, 12))
+                
                 if a.estado == "Activa":
-                    act_frm = ctk.CTkFrame(card, fg_color="transparent")
-                    act_frm.pack(fill="x", padx=16, pady=(0, 12))
-                    ctk.CTkButton(act_frm, text="✔  Marcar Atendida", width=150,
+                    ctk.CTkButton(act_frm, text="✔  Marcar Atendida", width=120,
                                   fg_color=C_GREEN, hover_color=C_GREENHOV,
                                   command=lambda aid=a.id: self._set_alerta(aid, "Atendida")
                                   ).pack(side="right", padx=6)
@@ -526,12 +527,37 @@ class AppWindow(ctk.CTk):
                                   fg_color=C_ORANGE, hover_color="#b45309",
                                   command=lambda aid=a.id: self._set_alerta(aid, "Escalada")
                                   ).pack(side="right", padx=6)
-                else:
-                    ctk.CTkLabel(card,
-                                 text=f"Estado: {a.estado}",
+                    ctk.CTkButton(act_frm, text="🗑 Eliminar", width=80,
+                                  fg_color="#881337", hover_color="#4c0519", # Red obscuro
+                                  command=lambda aid=a.id: self._set_alerta(aid, "Eliminar")
+                                  ).pack(side="left")
+                elif a.estado == "Escalada":
+                    ctk.CTkButton(act_frm, text="✔  Marcar Atendida", width=120,
+                                  fg_color=C_GREEN, hover_color=C_GREENHOV,
+                                  command=lambda aid=a.id: self._set_alerta(aid, "Atendida")
+                                  ).pack(side="right", padx=6)
+                    ctk.CTkButton(act_frm, text="⬇  Desescalar", width=100,
+                                  fg_color=C_ACCENT, hover_color="#1d4ed8",
+                                  command=lambda aid=a.id: self._set_alerta(aid, "Activa")
+                                  ).pack(side="right", padx=6)
+                    ctk.CTkButton(act_frm, text="🔄  Re-notificar", width=110,
+                                  fg_color="#0891b2", hover_color="#164e63", # Cyan
+                                  command=lambda aid=a.id: self._set_alerta(aid, "Re-notificar")
+                                  ).pack(side="left")
+                elif a.estado == "Atendida":
+                    ctk.CTkLabel(act_frm,
+                                 text=f"Estado Confirmado: {a.estado}",
                                  text_color=C_MUTED,
                                  font=ctk.CTkFont("Segoe UI", 11)
-                                 ).pack(anchor="e", padx=16, pady=(0, 10))
+                                 ).pack(side="left", padx=0)
+                    ctk.CTkButton(act_frm, text="♻  Reabrir", width=100,
+                                  fg_color=C_ACCENT, hover_color="#1d4ed8",
+                                  command=lambda aid=a.id: self._set_alerta(aid, "Activa")
+                                  ).pack(side="right", padx=6)
+                    ctk.CTkButton(act_frm, text="🗑 Eliminar", width=80,
+                                  fg_color="#881337", hover_color="#4c0519",
+                                  command=lambda aid=a.id: self._set_alerta(aid, "Eliminar")
+                                  ).pack(side="right", padx=6)
         finally:
             s.close()
 
@@ -540,20 +566,30 @@ class AppWindow(ctk.CTk):
         try:
             a = s.query(Alerta).get(aid)
             if a:
-                # 1. Ejecutar Notificación a Telegram si es Escalada
-                if estado == "Escalada":
+                # Caso Borrado Permanente
+                if estado == "Eliminar":
+                    s.delete(a)
+                    s.commit()
+                    self._refresh_alertas()
+                    return
+                
+                # Caso Renotificación / Escalado Inicial a Telegram (Sin salir de estado actual si ya está escalada)
+                if estado == "Re-notificar" or estado == "Escalada":
                     from telegram_bot import get_telegram_service
                     tg = get_telegram_service()
                     if a.estudiante and a.estudiante.telegram_chat_id:
-                        msg = (f"⚠️ *MENSAJE OFICIAL COORDINACIÓN (SAE)* ⚠️\n\n"
-                               f"Estimado(a) {a.estudiante.nombre}. Se te ha emitido una alerta urgente:\n\n"
+                        prefix = "📢 *RECORDATORIO DE COORDINACIÓN (SAE)*" if estado == "Re-notificar" else "⚠️ *MENSAJE OFICIAL COORDINACIÓN (SAE)* ⚠️"
+                        msg = (f"{prefix}\n\n"
+                               f"Estimado(a) {a.estudiante.nombre}. Se te requiere atención directa por una alerta:\n\n"
                                f"📝 *Motivo:* {a.descripcion}\n"
                                f"📍 *Acción:* Por favor, reportarse con su tutor lo antes posible.\n\n"
                                f"_Responde a Luna si necesitas ayuda._")
                         tg.send_alert(a.estudiante.telegram_chat_id, msg)
                     
-                # 2. Quitar la alerta de la base de datos para limpiar la lista ("quitarla por si la quiero volver a escalar")
-                s.delete(a)
+                # Siempre actualizar el estado visual excepto si es un mero empuje del recordatorio
+                if estado != "Re-notificar":
+                    a.estado = estado
+                    
                 s.commit()
                 
             self._refresh_alertas()
