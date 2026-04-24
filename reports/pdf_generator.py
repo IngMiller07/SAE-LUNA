@@ -120,17 +120,20 @@ def generar_reporte_riesgos(output_path=None):
         # ----------------------------------------------------
         elements.append(Paragraph("2. Clasificación de Alertas del Sistema", heading_style))
         if alertas:
-            alertas_data = [["Estado", "Prioridad", "Tópic", "Estudiante Involucrado"]]
+            alertas_data = [["Est.", "Prior.", "Alerta/Tópico", "Estudiante Involucrado", "Programa Académico"]]
             for a in alertas[:25]: # Límite de 25 paras no romper tablas de memoria
-                est_n = a.estudiante.nombre[:22] + "..." if a.estudiante and len(a.estudiante.nombre)>22 else (a.estudiante.nombre if a.estudiante else "N/A")
+                est_n = a.estudiante.nombre[:20] + "..." if a.estudiante and len(a.estudiante.nombre)>20 else (a.estudiante.nombre if a.estudiante else "N/A")
+                prog = a.estudiante.carrera[:20] + "..." if a.estudiante and len(a.estudiante.carrera)>20 else (a.estudiante.carrera if a.estudiante else "N/A")
+                
                 alertas_data.append([
-                    a.estado,
-                    a.prioridad,
-                    a.tipo.replace('_', ' ').title(),
-                    est_n
+                    a.estado[:4], # Acortar para caber ("Acti", "Esca")
+                    a.prioridad[:4], # Acortar ("Alta", "Medi")
+                    a.tipo.replace('_', ' ').title()[:20],
+                    est_n,
+                    prog
                 ])
                 
-            al_table = Table(alertas_data, colWidths=[3*cm, 3*cm, 5*cm, 7*cm])
+            al_table = Table(alertas_data, colWidths=[1.8*cm, 1.8*cm, 4.3*cm, 4.8*cm, 5.3*cm])
             al_table.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4527a0')),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
