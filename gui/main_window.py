@@ -618,7 +618,7 @@ class AppWindow(ctk.CTk):
 
         ctk.CTkLabel(center, text="📋",
                      font=ctk.CTkFont(size=52)).grid(row=0, column=0, pady=(40, 10))
-        ctk.CTkLabel(center, text="Reporte de Riesgo Académico por Cohorte",
+        ctk.CTkLabel(center, text="Reporte de Riesgo Académico por Corte",
                      font=ctk.CTkFont("Segoe UI", 18, "bold"),
                      text_color=C_TEXT).grid(row=1, column=0, pady=(0, 8))
         ctk.CTkLabel(center,
